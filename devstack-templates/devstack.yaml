@@ -1,0 +1,210 @@
+heat_template_version: 2015-10-15
+description: Sets up a basic development machine, enabling access to the users OpenStack project.
+parameters:
+  external_network:
+    type: string
+    description: The external network for floating IP allocations.
+    default: public-138-net
+  username:
+    type: string
+    description: Linux user name for devstack developer
+    default: stack
+  fork_name:
+    type: string
+    description: The GitHub fork to use for Infoblox Heat and Ceilometer
+    default: infobloxopen
+  branch_name:
+    type: string
+    description: The DevStack branch to checkout
+    default: master
+  devstack_url:
+    type: string
+    description: The DevStack repo to clone
+    default: https://git.openstack.org/openstack-dev/devstack
+
+resources:
+  devstack_net:
+    type: OS::Neutron::Net
+    properties:
+      name: devstack-net
+
+  devstack_subnet:
+    type: OS::Neutron::Subnet
+    depends_on: devstack_net
+    properties:
+      name: devstack
+      network: { get_resource: devstack_net }
+      cidr: 10.222.245.0/24
+      enable_dhcp: true
+      dns_nameservers: [172.23.25.240]
+
+  router_devstack:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: dev-router
+      subnet: { get_resource: devstack_subnet }
+
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: devstack_net }
+      port_security_enabled: false
+
+  floating_ip:
+    type: OS::Neutron::FloatingIP
+    depends_on: [router_devstack]
+    properties:
+      floating_network: { get_param: external_network }
+      port_id: { get_resource: mgmt_port }
+
+  dev:
+    type: OS::Nova::Server
+    depends_on: [mgmt_port]
+    properties:
+      name: devstack
+      flavor: m1.xlarge
+      image: Ubuntu Trusty 14.04
+      config_drive: True
+      networks: [{port: { get_resource: mgmt_port}}]
+      user_data_format: RAW
+      user_data: {get_attr: [config, config]}
+
+  config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      config:
+        str_replace:
+          template: |
+            #cloud-config
+            ssh_pwauth: true
+            password: infoblox
+            chpasswd: { expire: False }
+
+            write_files:
+              - path: /tmp/local.conf
+                content: |
+                      [[local|localrc]]
+                      ADMIN_PASSWORD=infoblox
+                      DATABASE_PASSWORD=$ADMIN_PASSWORD
+                      RABBIT_PASSWORD=$ADMIN_PASSWORD
+                      SERVICE_PASSWORD=$ADMIN_PASSWORD
+                      SERVICE_TOKEN=767183b0-ac7e-11e4-8fb5-000c29f0f35a
+                      FIXED_RANGE=10.0.0.0/24
+                      FLOATING_RANGE=10.222.245.0/24
+                      Q_FLOATING_ALLOCATION_POOL=start=10.222.245.10,end=10.222.245.254
+                      PUBLIC_NETWORK_GATEWAY=10.222.245.1
+                      PUBLIC_INTERFACE=eth0
+                      Q_USE_PROVIDERNET_FOR_PUBLIC=True
+                      OVS_PHYSICAL_BRIDGE=br-ex
+                      OVS_BRIDGE_MAPPINGS=public:br-ex
+                      HOST_IP=$mgmt_ip
+
+                      LOGFILE=/opt/stack/logs/stack.log
+
+                      # Neutron OVS (vxlan)
+                      Q_PLUGIN=ml2
+                      Q_ML2_PLUGIN_PATH_MTU=1500
+                      Q_ML2_TENANT_NETWORK_TYPE=vxlan
+                      Q_ML2_PLUGIN_TYPE_DRIVERS=vxlan
+                      Q_ML2_PLUGIN_VXLAN_TYPE_OPTIONS=(vni_ranges=1001:2000)
+                      Q_AGENT_EXTRA_AGENT_OPTS=(tunnel_types=vxlan vxlan_udp_port=8472)
+                      Q_USE_NAMESPACE=True
+                      Q_USE_SECGROUP=True
+                      # Logging
+                      LOGFILE=/opt/stack/logs/stack.sh.log
+                      VERBOSE=True
+                      LOG_COLOR=True
+                      SCREEN_LOGDIR=/opt/stack/logs/screen
+                      LOGDAYS=1
+
+                      RECLONE=yes 
+                      IP_VERSION=4 
+                      NEUTRON_CREATE_INITIAL_NETWORKS=False
+
+                      disable_service n-net
+                      enable_service neutron q-svc q-agt q-dhcp q-l3 q-meta
+                      enable_service heat h-api h-api-cfn h-api-cw h-eng
+                      enable_service tempest
+                      
+                      # Images
+                      IMAGE_URLS+=",http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-disk.img"
+
+                      # networking-infoblox devstack installation
+                      NETWORKING_INFOBLOX_SUPERUSER_USERNAME=admin
+                      NETWORKING_INFOBLOX_SUPERUSER_PASSWORD=infoblox
+
+                      # networking-infoblox main configurations
+                      NETWORKING_INFOBLOX_CLOUD_DATA_CENTER_ID=1
+
+                      # Infoblox IPAM Driver Cloud Data Center Configurations
+                      NETWORKING_INFOBLOX_DC_GRID_MASTER_HOST=172.22.138.108
+                      NETWORKING_INFOBLOX_DC_GRID_MASTER_NAME=infoblox.localdomain
+                      NETWORKING_INFOBLOX_DC_ADMIN_USER_NAME=cloud
+                      NETWORKING_INFOBLOX_DC_ADMIN_PASSWORD=cloud
+                      NETWORKING_INFOBLOX_DC_WAPI_VERSION=2.3
+                      NETWORKING_INFOBLOX_DC_SSL_VERIFY=False
+                      NETWORKING_INFOBLOX_DC_HTTP_POOL_CONNECTIONS=100
+                      NETWORKING_INFOBLOX_DC_HTTP_POOL_MAXSIZE=100
+                      NETWORKING_INFOBLOX_DC_HTTP_REQUEST_TIMEOUT=120
+                      NETWORKING_INFOBLOX_DC_WAPI_MAX_RESULTS=-1000
+                      NETWORKING_INFOBLOX_DC_PARTICIPATING_NETWORK_VIEWS=default
+
+                      enable_plugin networking-infoblox https://git.openstack.org/openstack/networking-infoblox.git
+                      enable_service networking-infoblox
+                      # Credentials
+                      [[post-config|/etc/neutron/neutron.conf]]
+                      [DEFAULT]
+                      host = devstack
+                      debug = False
+                      verbose = True
+
+                      [[post-config|/etc/neutron/dhcp_agent.ini]]
+                      [DEFAULT]
+                      debug = True
+                      dhcp_delete_namespaces = True
+                      dhcp_agent_manager = neutron.agent.dhcp_agent.DhcpAgentWithStateReport
+
+                      [[post-config|/etc/neutron/l3_agent.ini]]
+                      [DEFAULT]
+                      debug = True
+                      verbose = True
+                      use_namespaces = True
+                      l3_agent_manager = neutron.agent.l3_agent.L3NATAgentWithStateReport
+                      interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+                      ovs_use_veth = False
+                      root_helper = sudo /usr/local/bin/neutron-rootwrap /etc/neutron/rootwrap.conf
+
+                      [[post-config|/etc/nova/nova.conf]]
+                      [DEFAULT]
+                      host = devstack
+                      console_host = devstack
+
+            runcmd:
+              - apt-get update
+              - apt-get -y --force-yes upgrade
+              - echo infoblox > /tmp/pw
+              - echo infoblox >> /tmp/pw
+              - adduser --gecos "DevStack User" --quiet $username < /tmp/pw
+              - usermod -G sudo $username
+              - echo >> /etc/hosts
+              - echo $mgmt_ip devstack_raghav >> /etc/hosts
+              - apt-get -y install git
+              - cd /home/$username
+              - git clone $devstack_url
+              - cd devstack
+              - git checkout $branch_name
+              - cp /tmp/local.conf .
+              - cp -r /home/ubuntu/.ssh /home/$username
+              - chown -R $username:$username /home/$username
+              - sudo /home/stack/devstack/tools/create-stack-user.sh < /tmp/pw
+
+          params:
+            $username: {get_param: username}
+            $devstack_url: {get_param: devstack_url}
+            $branch_name: {get_param: branch_name}
+            $fork_name: {get_param: fork_name}
+            $mgmt_ip: {get_attr: [mgmt_port, fixed_ips, 0, ip_address]}
+outputs:
+  floating_ip:
+    description: The publically accessible floating IP of the devstack instance.
+    value: { get_attr: [floating_ip, floating_ip_address] }
