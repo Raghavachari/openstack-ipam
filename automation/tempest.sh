@@ -15,4 +15,6 @@ sudo pip install -r test-requirements.txt
 #./run_tempest.sh -V tempest.api.network.test_networks
 ./run_tempest.sh -V tempest.api.network.test_ports 2>&1 | tee tempest_api_network_test_ports
 neutron net-delete $ext_net_id
+mkdir -p /home/stack/reports
+cp -r /opt/stack/tempest/tempest_api* /home/stack/reports/
 sleep 30
