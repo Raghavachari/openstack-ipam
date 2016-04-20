@@ -9,7 +9,7 @@ import os
 tenant_name = "admin"
 network = "net"
 subnet_name = "snet"
-subnet = "129.127.0.0/24"
+subnet = "73.73.0.0/24"
 instance = "host"
 CONF = "config.ini"
 parser = ConfigParser.SafeConfigParser()

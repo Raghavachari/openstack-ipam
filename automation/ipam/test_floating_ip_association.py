@@ -12,7 +12,7 @@ subnet_name = "snet"
 ext_net_name = "public"
 ext_snet_name = "public_snet"
 ext_snet = "10.39.12.0/24"
-subnet = "129.127.0.0/24"
+subnet = "70.70.0.0/24"
 instance = "host"
 
 CONF = "config.ini"

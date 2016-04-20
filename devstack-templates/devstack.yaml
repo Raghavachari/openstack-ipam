@@ -137,7 +137,7 @@ resources:
                       NETWORKING_INFOBLOX_CLOUD_DATA_CENTER_ID=1
 
                       # Infoblox IPAM Driver Cloud Data Center Configurations
-                      NETWORKING_INFOBLOX_DC_GRID_MASTER_HOST=172.22.138.112
+                      NETWORKING_INFOBLOX_DC_GRID_MASTER_HOST=172.22.138.115
                       NETWORKING_INFOBLOX_DC_GRID_MASTER_NAME=infoblox.localdomain
                       NETWORKING_INFOBLOX_DC_ADMIN_USER_NAME=cloud
                       NETWORKING_INFOBLOX_DC_ADMIN_PASSWORD=cloud

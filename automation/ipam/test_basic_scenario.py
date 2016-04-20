@@ -9,7 +9,7 @@ import os
 tenant_name = "admin"
 network = "net"
 subnet_name = "snet"
-subnet = "129.127.0.0/24"
+subnet = "71.71.0.0/24"
 instance = "host"
 CONF = "config.ini"
 parser = ConfigParser.SafeConfigParser()
@@ -80,12 +80,12 @@ gm_ref = wapi_request('GET', object_type="member", params=params)
 ref = loads(gm_ref)[0]['_ref']
 data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Default Network View Scope": {"value": "Single"}, "Default Network View": {"value": "default"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Host Record"}, "Default Domain Name Pattern": {"value": "{subnet_id}.cloud.global.com"}}}
 wapi_request('PUT', object_type=ref,fields=dumps(data))
-time.sleep(20)
+time.sleep(10)
 print "Restarting Devstack Screens"
 os.system("sudo -H -u stack screen -X -S stack quit")
 time.sleep(5)
 os.system("sudo -H -u stack screen -d -m -c /home/stack/devstack/stack-screenrc")
-time.sleep(20)
+time.sleep(30)
 
 s.create_network(network)
 s.create_subnet(network, subnet_name, subnet)
@@ -115,12 +115,12 @@ gm_ref = wapi_request('GET', object_type="member", params=params)
 ref = loads(gm_ref)[0]['_ref']
 data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Default Network View Scope": {"value": "Single"}, "Default Network View": {"value": "default"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Fixed Address"}, "Default Domain Name Pattern": {"value": "{subnet_name}.cloud.global.com"}}}
 wapi_request('PUT', object_type=ref,fields=dumps(data))
-time.sleep(20)
+time.sleep(10)
 print "Restarting Devstack Screens"
 os.system("sudo -H -u stack screen -X -S stack quit")
 time.sleep(5)
 os.system("sudo -H -u stack screen -d -m -c /home/stack/devstack/stack-screenrc")
-time.sleep(20)
+time.sleep(30)
 
 s.create_network(network)
 s.create_subnet(network, subnet_name, subnet)
