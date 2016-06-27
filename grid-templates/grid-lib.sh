@@ -6,9 +6,21 @@ function port_first_fixed_ip() {
 	neutron port-show -c fixed_ips -f value $1 | sed -e 's/.*ip_address": "\([0-9\.]*\)".*/\1/'
 }
 
+
 function port_gw() {
 	subnet_id=$(neutron port-show -c fixed_ips -f value $1 | sed -e 's/.*"subnet_id": "\([-a-z0-9]*\)", .*/\1/')
 	neutron subnet-show -c gateway_ip -f value $subnet_id
+}
+
+function validate_ha() {
+        grid_ip=$1
+        member_ha_name=$2
+
+        echo $(date): Checking HA is complete..
+        ha_status=$(curl -sk -H "Content-Type: application/json" -u admin:infoblox -X GET https://$grid_ip/wapi/v2.2/member?host_name=$member_ha_name;_return_fields=enable_ha | grep enable_ha | cut -d: -f2-3 | tr -d '," ')
+        if [[ "$ha_status" == "true" ]]; then
+            echo $(date): HA done successfully..
+        fi
 }
 
 function wait_for_stack() {
