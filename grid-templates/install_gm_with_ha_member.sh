@@ -1,5 +1,7 @@
 #!/bin/bash
 #source /opt/devstack/openrc
+x=`find ~ -type f -name "*openrc.sh"`
+source $x
 if [[ -z "$OS_USERNAME" ]]; then
         echo "You must set up your OpenStack environment (source an openrc.sh file)."
         exit 1
