@@ -112,12 +112,14 @@ class utils:
         neutron_credentials['password'] = os.environ['OS_PASSWORD']
         self.neutron_client = client.Client(**neutron_credentials)
     
-    def get_domain_suffix_pattern_from_grid_config(self,netname,subname):
+    def get_domain_suffix_pattern_from_grid_config(self,netname,subname,rec_type="private"):
 	'''
 	Gets Zone name from 'Default Domain Name Pattern' in grid configuration
 	'''
         extattrs = self.get_grid_configuration()
-	domainsuffixpat = extattrs['Default Domain Name Pattern']['value']
+	#domainsuffixpat = extattrs['Default Domain Name Pattern']['value']
+        patt = ({True: 'Default Domain Name Pattern', False: 'External Domain Name Pattern'}[rec_type == "private"])
+	domainsuffixpat = extattrs[patt]['value']
 	if re.search("{tenant_id}", domainsuffixpat):
 	    tenantid = self.get_tenant_id()
 	    domainsuffixpat = re.sub("{tenant_id}",tenantid,domainsuffixpat)
@@ -134,13 +136,14 @@ class utils:
 	
 	return domainsuffixpat
 	    
-    def get_hostname_pattern_from_grid_config(self,ipadd,instanceobj,network,subnet):
+    def get_hostname_pattern_from_grid_config(self,ipadd,instanceobj,network,subnet,rec_type="private"):
 	'''
 	Gets Host name from 'Default Host Name Pattern' in grid configuration
 	'''
         extattrs = self.get_grid_configuration()
-	fqdn = self.get_domain_suffix_pattern_from_grid_config(network,subnet)
-	hostpat = extattrs['Default Host Name Pattern']['value']
+	fqdn = self.get_domain_suffix_pattern_from_grid_config(network,subnet,rec_type)
+        patt = ({True: 'Default Host Name Pattern', False: 'External Host Name Pattern'}[rec_type == "private"])
+	hostpat = extattrs[patt]['value']
 	#ipadd = instanceobj.addresses[network][0]['addr'] 
 	ipsplit = ipadd.split(".")
 	ipadd = ipadd.replace(".","-")

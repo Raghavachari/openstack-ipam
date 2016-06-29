@@ -685,7 +685,7 @@ class scenario1(unittest.TestCase):
 params="?host_name=infoblox.localdomain"
 gm_ref = wapi_request('GET', object_type="member", params=params)
 ref = loads(gm_ref)[0]['_ref']
-data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Default Network View Scope": {"value": "Single"}, "Default Network View": {"value": "default"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Fixed Address"}, "Default Domain Name Pattern": {"value": "{subnet_id}.cloud.global.com"}}}
+data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Default Network View Scope": {"value": "Single"}, "Default Network View": {"value": "default"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Fixed Address"}, "Default Domain Name Pattern": {"value": "{subnet_id}.cloud.global.com"},"External Host Name Pattern": {"value": "host-{ip_address}"},"External Domain Name Pattern": {"value": "{subnet_name}.external.global.com"}}}
 wapi_request('PUT', object_type=ref,fields=dumps(data))
 time.sleep(20)
 print "Restarting Devstack Screens"
@@ -707,7 +707,7 @@ port_id = s.get_instance_port_id(s1.networks['net'][0])
 s.add_floating_ip(instance)
 ips = s.get_instance_ips(instance)
 host_name = s.get_hostname_pattern_from_grid_config(ips['net'][0]['addr'],s1,network,subnet_name)
-fip_host_name = s.get_hostname_pattern_from_grid_config(ips['net'][1]['addr'],s1,ext_net_name,ext_snet_name)
+fip_host_name = s.get_hostname_pattern_from_grid_config(ips['net'][1]['addr'],s1,ext_net_name,ext_snet_name,rec_type="public")
 
 print "*" * 70
 print "Starts Tests"

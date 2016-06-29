@@ -29,13 +29,21 @@ class TestHostRecord(unittest.TestCase):
         else:
             self.fail("Network %s is not added to NIOS" % subnet)
 
-    def test_Zone_added_to_NIOS(self):
-        args = "fqdn=%s" % (fqdn)
+    def test_External_Zone_added_to_NIOS(self):
+        args = "fqdn=%s" % (fqdn_external)
         code, msg = wapi_get_request("zone_auth", args)
         if code == 200 and len(loads(msg)) > 0:
-            self.assertEqual(loads(msg)[0]['fqdn'], fqdn)
+            self.assertEqual(loads(msg)[0]['fqdn'], fqdn_external)
         else:
-            self.fail("Zone %s is not added to NIOS" % fqdn)
+            self.fail("Zone %s is not added to NIOS" % fqdn_external)
+
+    def test_Internal_Zone_added_to_NIOS(self):
+        args = "fqdn=%s" % (fqdn_private)
+        code, msg = wapi_get_request("zone_auth", args)
+        if code == 200 and len(loads(msg)) > 0:
+            self.assertEqual(loads(msg)[0]['fqdn'], fqdn_private)
+        else:
+            self.fail("Zone %s is not added to NIOS" % fqdn_private)
     
     def test_instance_host_record(self):
         args = "name=%s" % (host_name)
@@ -233,7 +241,7 @@ class TestHostRecord(unittest.TestCase):
                 s1.user_id)
         else:
             self.fail(
-                "EA for user ID % does not match with NIOS" %
+                "EA for user ID %s does not match with NIOS" %
                 s1.user_id)
 
     def test_FIP_EA_Port_ID(self):
@@ -245,7 +253,7 @@ class TestHostRecord(unittest.TestCase):
                 port_id)
         else:
             self.fail(
-                "EA for PORT ID % does not match with NIOS" % port_id)
+                "EA for PORT ID %s does not match with NIOS" % port_id)
 
     def test_FIP_EA_CMP_Type(self):
         args = "name=%s&_return_fields=extattrs" % (fip_host_name)
@@ -283,8 +291,9 @@ s.add_floating_ip(instance)
 ips = s.get_instance_ips(instance)
 host_name = s.get_hostname_pattern_from_grid_config(ips['net'][0]['addr'],s1,network,subnet_name)
 port_id = s.get_instance_port_id(s1.networks['net'][0])
-fip_host_name = s.get_hostname_pattern_from_grid_config(ips['net'][1]['addr'],s1,ext_net_name,ext_snet_name)
-fqdn = s.get_domain_suffix_pattern_from_grid_config(network, subnet_name)
+fip_host_name = s.get_hostname_pattern_from_grid_config(ips['net'][1]['addr'],s1,ext_net_name,ext_snet_name,rec_type="public")
+fqdn_external = s.get_domain_suffix_pattern_from_grid_config(ext_net_name, ext_snet_name, rec_type="public")
+fqdn_private = s.get_domain_suffix_pattern_from_grid_config(network, subnet_name, rec_type="private")
 
 print "*" * 70
 print "Starts Tests"

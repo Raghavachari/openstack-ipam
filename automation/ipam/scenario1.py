@@ -73,7 +73,7 @@ class BasicScenarioFixedAddress(unittest.TestCase):
             self.fail("Host %s is not added to NIOS" % host_name)
 
 s = utils(tenant_name)
-params="?host_name=infoblox.localdomain"
+params="?ipv4_address=" + gm_ip
 gm_ref = wapi_request('GET', object_type="member", params=params)
 ref = loads(gm_ref)[0]['_ref']
 data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Host Record"}, "Default Domain Name Pattern": {"value": "{subnet_id}.cloud.global.com"}}}
@@ -102,7 +102,7 @@ s.delete_network(network)
 
 
 s = utils(tenant_name)
-params="?host_name=infoblox.localdomain"
+params="?ipv4_address=" + gm_ip
 gm_ref = wapi_request('GET', object_type="member", params=params)
 ref = loads(gm_ref)[0]['_ref']
 data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Fixed Address"}, "Default Domain Name Pattern": {"value": "{subnet_name}.cloud.global.com"}}}

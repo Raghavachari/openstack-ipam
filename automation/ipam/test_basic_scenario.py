@@ -4,12 +4,11 @@ from json import dumps
 import unittest
 import ConfigParser
 import time
-import os
 
 tenant_name = "admin"
 network = "net"
 subnet_name = "snet"
-subnet = "71.71.0.0/24"
+subnet = "129.127.0.0/24"
 instance = "host"
 CONF = "config.ini"
 parser = ConfigParser.SafeConfigParser()
@@ -75,19 +74,15 @@ class BasicScenarioFixedAddress(unittest.TestCase):
             self.fail("Host %s is not added to NIOS" % host_name)
 
 s = utils(tenant_name)
-params="?host_name=infoblox.localdomain"
+params="?ipv4_address=" + gm_ip
 gm_ref = wapi_request('GET', object_type="member", params=params)
 ref = loads(gm_ref)[0]['_ref']
-data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Default Network View Scope": {"value": "Single"}, "Default Network View": {"value": "default"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Host Record"}, "Default Domain Name Pattern": {"value": "{subnet_id}.cloud.global.com"}}}
+data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Host Record"}, "Default Domain Name Pattern": {"value": "{subnet_id}.cloud.global.com"}}}
 wapi_request('PUT', object_type=ref,fields=dumps(data))
-time.sleep(10)
-print "Restarting Devstack Screens"
-os.system("sudo -H -u stack screen -X -S stack quit")
-time.sleep(5)
-os.system("sudo -H -u stack screen -d -m -c /home/stack/devstack/stack-screenrc")
-time.sleep(30)
+time.sleep(20)
 
 s.create_network(network)
+time.sleep(5)
 s.create_subnet(network, subnet_name, subnet)
 s1 = s.launch_instance(instance, network)
 ips = s.get_instance_ips(instance)
@@ -110,20 +105,16 @@ s.delete_network(network)
 
 
 s = utils(tenant_name)
-params="?host_name=infoblox.localdomain"
+params="?ipv4_address=" + gm_ip
 gm_ref = wapi_request('GET', object_type="member", params=params)
 ref = loads(gm_ref)[0]['_ref']
 data = {"extattrs+": {"Default Host Name Pattern": {"value": "host-{ip_address}"}, "Default Network View Scope": {"value": "Single"}, "Default Network View": {"value": "default"}, "Admin Network Deletion": {"value": "True"}, "DHCP Support": {"value": "True"}, "DNS Support": {"value": "True"}, "IP Allocation Strategy": {"value": "Fixed Address"}, "Default Domain Name Pattern": {"value": "{subnet_name}.cloud.global.com"}}}
 wapi_request('PUT', object_type=ref,fields=dumps(data))
-time.sleep(10)
-print "Restarting Devstack Screens"
-os.system("sudo -H -u stack screen -X -S stack quit")
-time.sleep(5)
-os.system("sudo -H -u stack screen -d -m -c /home/stack/devstack/stack-screenrc")
-time.sleep(30)
+time.sleep(20)
 
 s.create_network(network)
 s.create_subnet(network, subnet_name, subnet)
+time.sleep(10)
 s1 = s.launch_instance(instance, network)
 ips = s.get_instance_ips(instance)
 host_name = s.get_hostname_pattern_from_grid_config(ips['net'][0]['addr'],s1,network,subnet_name)
